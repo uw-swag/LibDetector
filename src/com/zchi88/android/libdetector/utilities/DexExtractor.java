@@ -121,11 +121,11 @@ public class DexExtractor {
 		for (File file : apksToExtract) {
 			String machineOS = System.getProperty("os.name").toLowerCase();
 			
-			if (machineOS.startsWith("linux")) {
+			if (machineOS.startsWith("linux") || machineOS.startsWith("mac")) {
 				Path pathToDex2Jar = Paths.get("").toAbsolutePath().resolve(DEX2JAR_VERSION).resolve(DEX2JAR_FILE_LINUX);
 				String[] command = {"sh", pathToDex2Jar.toString(), file.toString() };
 				processBuilder.command(command);
-			} 
+			}
 
 			if (machineOS.startsWith("windows")) {
 				Path pathToDex2Jar = Paths.get("").toAbsolutePath().resolve(DEX2JAR_VERSION).resolve(DEX2JAR_FILE_WINDOWS);

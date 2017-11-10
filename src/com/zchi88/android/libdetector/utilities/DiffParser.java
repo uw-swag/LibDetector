@@ -40,7 +40,7 @@ public class DiffParser {
 	    while (scanner.hasNextLine()) {
 	    	nextLine = scanner.nextLine();
 	    	if (!nextLine.isEmpty()) {
-	    		if (machineOS.startsWith("linux")) {
+	    		if (machineOS.startsWith("linux") || machineOS.startsWith("mac")) {
 	    			nextLine = nextLine.replace("\\", "/");
 				}
 				File exclusiveFile = new File(nextLine);
@@ -81,7 +81,7 @@ public class DiffParser {
 	    while (scanner.hasNextLine()) {
 	    	nextLine = scanner.nextLine();
 	    	if (!nextLine.isEmpty()) {
-	    		if (machineOS.startsWith("linux")) {
+	    		if (machineOS.startsWith("linux") || machineOS.startsWith("mac")) {
 					nextLine = nextLine.replace("\\", "/");
 				}
 				File moddedFile = new File(nextLine);
@@ -121,7 +121,7 @@ public class DiffParser {
 	    while (scanner.hasNextLine()) {
 	    	nextLine = scanner.nextLine();
 	    	if (!nextLine.isEmpty()) {
-	    		if (machineOS.startsWith("linux")) {
+	    		if (machineOS.startsWith("linux") || machineOS.startsWith("mac")) {
 	    			nextLine = nextLine.replace("\\", "/");
 				}
 				File deletedFile = new File(nextLine);
@@ -162,7 +162,7 @@ public class DiffParser {
 	    while (scanner.hasNextLine()) {
 	    	nextLine = scanner.nextLine();
 	    	if (!nextLine.isEmpty()) {
-	    		if (machineOS.startsWith("linux")) {
+	    		if (machineOS.startsWith("linux") || machineOS.startsWith("mac")) {
 	    			nextLine = nextLine.replace("\\", "/");
 				}
 				File copiedFile = new File(nextLine);
