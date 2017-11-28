@@ -19,7 +19,7 @@ import java.util.HashMap;
  */
 public class ApkProcessor {
 	// Default to not show console output 
-	private static final Boolean DISPLAY_OUTPUT = false;
+	private static final Boolean DISPLAY_OUTPUT = true;
 	
 	/**
 	 * Processes an APK by first converting its classes.dex file(s) into JAR files, then extracting the bytecode(.class files) out of the JAR.

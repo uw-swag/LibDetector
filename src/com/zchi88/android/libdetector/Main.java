@@ -34,13 +34,15 @@ public class Main {
 	 * Display correct usage information for this tool.
 	 */
 	private static void showHowToUse() {
-		System.err.println("Error. One argument(the path to the whitelist library) is expected. Example:");
-		System.err.println("java -jar AndroidLibDetector.jar PATH/TO/LIBRARIES/DIRECTORY");
+		System.err.println("Error. At least one argument (the path to the whitelist library) is expected.");
+		System.err.println("Optional argument: Android_APKs (the path to the apk files).");
+		System.err.println("Example:");
+		System.err.println("java -jar AndroidLibDetector.jar PATH/TO/LIBRARIES/DIRECTORY PATH/TO/ANDROID/APKS");
 		System.exit(-1);
 	}
 
 	public static void main(String[] args) throws IOException, InterruptedException {
-		if (args.length != 1) {
+		if (args.length < 1) {
 			showHowToUse();
 		}
 
@@ -55,12 +57,16 @@ public class Main {
 			System.err.println("Exiting program.");
 			System.exit(-1);
 		}
-
-		Path relApksPath = Paths.get("Android_APKs");
-
+		
 		Path workingDir = Paths.get("").toAbsolutePath();
-
-		Path absApksPath = workingDir.resolve(relApksPath);
+		Path absApksPath;
+		
+		if (args.length >=2 ) {
+			absApksPath = Paths.get(args[1]);
+		}
+		else {
+			absApksPath = workingDir.resolve(Paths.get("Android_APKs"));
+		}
 
 		// Check to make sure that the directory Android APKs directory exists.
 		File[] apks = absApksPath.toFile().listFiles();
