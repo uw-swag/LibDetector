@@ -10,6 +10,14 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import com.zchi88.android.libdetector.libmetadata.LibraryMetadata;
 import com.zchi88.android.libdetector.libmetadata.LibraryStats;
 import com.zchi88.android.libdetector.libmetadata.LibraryVersion;
@@ -23,31 +31,19 @@ import com.zchi88.android.libdetector.utilities.Timer;
  *
  */
 public class Main {
+	
 	// The maximum number of threads running concurrently to process the APKs.
 	// Optimal size will vary depending on the power of your machine.
 	// If your machine experiences noticeable performance drops while running
 	// the tool, the number of threads may need to be reduced
-	private static final int THREADPOOL_SIZE = 3;
+	private static int threadpoolSize = Runtime.getRuntime().availableProcessors();
 	private static HashMap<Path, ArrayList<LibraryVersion>> libsSnapshot;
-
-	/**
-	 * Display correct usage information for this tool.
-	 */
-	private static void showHowToUse() {
-		System.err.println("Error. At least one argument (the path to the whitelist library) is expected.");
-		System.err.println("Optional argument: Android_APKs (the path to the apk files).");
-		System.err.println("Example:");
-		System.err.println("java -jar AndroidLibDetector.jar PATH/TO/LIBRARIES/DIRECTORY PATH/TO/ANDROID/APKS");
-		System.exit(-1);
-	}
-
+	
 	public static void main(String[] args) throws IOException, InterruptedException {
-		if (args.length < 1) {
-			showHowToUse();
-		}
-
-		String libsPath = args[0];
-		Path whitelistPath = Paths.get(libsPath);
+		
+		CommandLine commands = getOptions(args);
+	
+		Path whitelistPath = Paths.get(commands.getOptionValue(OPTION_LIBRARIES));
 
 		// Check to make sure that the library whitelist directory exists.
 		File[] whitelistedLibraries = whitelistPath.toFile().listFiles();
@@ -58,15 +54,8 @@ public class Main {
 			System.exit(-1);
 		}
 		
-		Path workingDir = Paths.get("").toAbsolutePath();
-		Path absApksPath;
-		
-		if (args.length >=2 ) {
-			absApksPath = Paths.get(args[1]);
-		}
-		else {
-			absApksPath = workingDir.resolve(Paths.get("Android_APKs"));
-		}
+		Path absApksPath = Paths.get(commands.getOptionValue(OPTION_APKS));
+		Path absExtractPath = Paths.get(commands.getOptionValue(OPTION_OUTPUT));
 
 		// Check to make sure that the directory Android APKs directory exists.
 		File[] apks = absApksPath.toFile().listFiles();
@@ -83,6 +72,7 @@ public class Main {
 		System.out.println("Starting LibDetector tool.");
 		System.out.println("Performing analysis on APKs located at: " + absApksPath);
 		System.out.println("Drawing potential library matches from: " + whitelistPath);
+		System.out.println("Extracting results to: " + absExtractPath);
 		System.out.println("Looking for libraries now...\n");
 
 		// Get a "snapshot" of all libraries and their different version in the
@@ -90,7 +80,7 @@ public class Main {
 		libsSnapshot = LibSnapshot.getLibsSnapshot(whitelistPath);
 
 		// Start a threadpool service to increase processing power
-		ExecutorService libDetectorThreads = Executors.newFixedThreadPool(THREADPOOL_SIZE);
+		ExecutorService libDetectorThreads = Executors.newFixedThreadPool(threadpoolSize);
 
 		// For each file in the Android_APKs directory, get their source code
 		// then identify the libraries in them.
@@ -98,7 +88,7 @@ public class Main {
 
 		for (File file : apkFiles) {
 			if (file.getName().endsWith(".apk")) {
-				LibDetector detector = new LibDetector(libsSnapshot, file);
+				LibDetector detector = new LibDetector(libsSnapshot, file, absExtractPath);
 				libDetectorThreads.execute(detector);
 			}
 		}
@@ -120,12 +110,76 @@ public class Main {
 		System.out.println();
 
 		// Compute the metadata for the libraries found in the APKs
-		Path relExtractPath = Paths.get("Extracted_APKs");
-		Path absExtractPath = workingDir.resolve(relExtractPath);
 		HashMap<String, LibraryStats> libMetadata = LibraryMetadata.computeMetadata(absExtractPath);
 
 		// Write the metadata to a text file
+		Path workingDir = Paths.get("").toAbsolutePath();
 		File outputFile = workingDir.resolve("libMetadata.txt").toFile();
 		LibraryMetadata.metadataToFile(libMetadata, outputFile);
+	}
+	
+	private static final String OPTION_LIBRARIES = "libraries";
+	private static final String OPTION_APKS = "apks";
+	private static final String OPTION_OUTPUT = "output";
+	private static final String OPTION_THREADS = "threads";
+	
+	private static CommandLine getOptions(String[] args) {
+		
+		Options options = new Options();
+		
+		options.addOption(Option.builder("l")
+							    .longOpt(OPTION_LIBRARIES)
+							    .hasArg()
+							    .argName("path")
+							    .required()
+							    .desc("full path to libraries whitelist folder")
+							    .build());
+
+		options.addOption(Option.builder("a")
+							    .longOpt(OPTION_APKS)
+							    .hasArg()
+							    .argName("path")
+							    .required()
+							    .desc("full path to APKs folder")
+							    .build());
+
+		options.addOption(Option.builder("o")
+							    .longOpt(OPTION_OUTPUT)
+							    .hasArg()
+							    .argName("path")
+							    .required()
+							    .desc("full path to results output folder")
+							    .build());
+
+		options.addOption(Option.builder("t")
+							    .longOpt(OPTION_THREADS)
+							    .hasArg()
+							    .argName("number")
+							    .required(false)
+							    .desc("number of threads to run (optional - defaults to number of cores)")
+							    .build());
+		
+		CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd = null;
+
+        try {
+            cmd = parser.parse(options, args);
+            
+            if (cmd.hasOption(OPTION_THREADS)) {
+            		threadpoolSize = Integer.parseInt(cmd.getOptionValue(OPTION_THREADS));
+            }
+        }
+        // Display correct usage information for this tool.
+        catch (ParseException e) {
+            System.out.println(e.getMessage());
+            formatter.printHelp("java -jar AndroidLibDetector.jar [args]", options);
+            System.exit(1);
+        } catch (NumberFormatException e) {
+            formatter.printHelp("java -jar AndroidLibDetector.jar [args]", options);
+            System.exit(1);
+		}
+        
+		return cmd;
 	}
 }

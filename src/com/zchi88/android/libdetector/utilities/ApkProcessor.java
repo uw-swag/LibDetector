@@ -28,19 +28,16 @@ public class ApkProcessor {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static void processApk(File apkFile) throws InterruptedException, IOException {
+	public static void processApk(File apkFile, Path absExtractionPath) throws InterruptedException, IOException {
 		// Only operate if we are passed a valid APK file
 		if (apkFile.getName().endsWith(".apk")) {
+			
 			// First extract the APK file to the Extracted_APKs directory
-			DexExtractor.extractJars(apkFile, DISPLAY_OUTPUT);
+			DexExtractor.extractJars(apkFile, DISPLAY_OUTPUT, absExtractionPath);
 			
 			// Then decompile all JAR files that were created from the APK extraction
-			Path relExtractionPath = Paths.get("Extracted_APKs");
-			Path absExtractionPath = apkFile.toPath().getParent().getParent().resolve(relExtractionPath);
-			
 			Path relApkPAth = Paths.get(apkFile.getName().replace(".apk", ""));
 			Path absApkPAth = absExtractionPath.resolve(relApkPAth);
-			
 			JarExtractor.extractAllJars(absApkPAth, DISPLAY_OUTPUT);
 		} else {
 			System.err.println("Warning: " + apkFile + " is not an APK. Skipping file...");

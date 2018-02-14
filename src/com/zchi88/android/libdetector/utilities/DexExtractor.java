@@ -27,11 +27,11 @@ public class DexExtractor {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static void dex2jarAPKs(Path apksFolder) throws InterruptedException, IOException {
+	public static void dex2jarAPKs(Path apksFolder, Path extractedApkFolder) throws InterruptedException, IOException {
 		File[] apkFiles = apksFolder.toFile().listFiles();
 		for (File file : apkFiles) {
 			if (file.getName().endsWith(".apk")) {
-				extractJars(file, true);
+				extractJars(file, true, extractedApkFolder);
 			} else {
 				System.err.println("Warning: " + file + " is not an APK. Skipping file...");
 			}
@@ -47,12 +47,11 @@ public class DexExtractor {
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	public static void extractJars(File apkFile, Boolean showOutput) throws InterruptedException, IOException {
+	public static void extractJars(File apkFile, Boolean showOutput, Path extractedApkFolder) throws InterruptedException, IOException {
 		if (showOutput) {
 			System.out.println("Classes.dex files for " + apkFile + " have not been extracted. Extracting now...");
 		}
 		
-		Path extractedApkFolder = Paths.get("Extracted_APKs");
 		File extractedApkFile = new File(apkFile.getName().replace(".apk", ""));
 		Path extractionPath = apkFile.toPath().getParent().getParent().resolve(extractedApkFolder)
 				.resolve(extractedApkFile.toPath());
@@ -112,7 +111,7 @@ public class DexExtractor {
 		final ProcessBuilder processBuilder = new ProcessBuilder();
 		// Redirect any output (including error) to a file. This avoids
 		// deadlocks when the buffers get full.
-		File outputFile = apkFile.toPath().getParent().resolve("dex2jarOutput.txt").toFile();
+		File outputFile = extractionPath.resolve("dex2jarOutput.txt").toFile();
 		processBuilder.redirectErrorStream(true);
 		processBuilder.redirectOutput(outputFile);
 

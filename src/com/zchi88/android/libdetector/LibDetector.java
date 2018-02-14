@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -29,11 +28,13 @@ public class LibDetector implements Runnable {
 	private static final double LEVEN_THRESHHOLD = 0.5;
 	private HashMap<Path, ArrayList<LibraryVersion>> libsSnapshot;
 	private File apkFile;
+	private Path extractionPath;
 	private static String outputFileName = LibraryMetadata.LIB_RESULTS_FILENAME;
 
-	public LibDetector(HashMap<Path, ArrayList<LibraryVersion>> libsSnapshot, File apkFile) {
+	public LibDetector(HashMap<Path, ArrayList<LibraryVersion>> libsSnapshot, File apkFile, Path extractionPath) {
 		this.libsSnapshot = libsSnapshot;
 		this.apkFile = apkFile;
+		this.extractionPath = extractionPath;
 	}
 
 	/**
@@ -44,7 +45,7 @@ public class LibDetector implements Runnable {
 	 */
 	private void identifyLibs() throws InterruptedException, IOException {
 		Path workingDir = apkFile.toPath().getParent().getParent();
-		Path relExtractionPath = Paths.get("Extracted_APKs").resolve(apkFile.getName().replace(".apk", ""));
+		Path relExtractionPath = extractionPath.resolve(apkFile.getName().replace(".apk", ""));
 		Path decompiledApkPath = workingDir.resolve(relExtractionPath).resolve("byteCode");
 		Path outputTextPath = workingDir.resolve(relExtractionPath);
 		File outputFile = new File(outputFileName);
@@ -53,10 +54,11 @@ public class LibDetector implements Runnable {
 		// Only run on the APK if its results haven't already been computed
 		if (!outputFilePath.toFile().exists()) {
 			System.out.println("Scanning " + apkFile + " now for libraries.");
-			ApkProcessor.processApk(apkFile);
+			ApkProcessor.processApk(apkFile, extractionPath);
 
 			HashMap<Path, ArrayList<LibraryStats>> libMatches = matchVersions(libsSnapshot, decompiledApkPath);
 			outputResults(outputTextPath, libMatches);
+			
 			// Remove files besides the LIB_RESULTS_FILENAME to conserve hard
 			// drive space, since they are no longer needed.
 			cleanUp(outputTextPath);
